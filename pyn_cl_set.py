@@ -19,6 +19,10 @@ class cl_set:
         self.file_hbonds=''
         self.file_mss=''
         self.file_shell=''
+        
+        ###New_one###
+        self.path='~/Pyno/'
+        #############
 
         # > Topological properties
         self.num_atoms=0
@@ -60,7 +64,7 @@ class cl_set:
             if self.file.endswith('pdb'):
                 self.read_pdb(self.file)
 
-            elif self.file.endswith('gro'):
+            if self.file.endswith('gro'):
                 self.read_gro(self.file)
 
             ### Setting up other atoms' attributes
@@ -246,7 +250,7 @@ class cl_set:
         if self.coors_file.endswith('pdb'):
             self.read_coors_pdb(self.file)
 
-        elif self.file.endswith('gro'):
+        elif self.coors_file.endswith('gro'):
             self.read_coors_gro(self.file)
 
         #elif self.file.endswith('xtc'):
@@ -462,7 +466,7 @@ class cl_set:
 #######################################################
 ### Analysis of the entire water trajectory:
 
-    def water_analysis (self,traj_name=None,write_out=None,init_frame=0,last_frame=-1):
+    def water_analysis (self,traj_name=None,write_out=None,init_frame=0,last_frame=-1,RAM=0):
 
         if traj_name == None:
             print 'input the traj_name'
@@ -475,16 +479,26 @@ class cl_set:
         if write_out==None:
             write_out='No'
             
+        if RAM==0:
 
-        command='./pyn_anw '+traj_name+' '+write_out+' '+self.water_model+' '+str(self.num_residues)+' '+str(init_frame)+' '+str(last_frame)
-        system(command)
+            command=self.path+'./pyn_anw '+traj_name+' '+write_out+' '+self.water_model+' '+str(self.num_residues)+' '+str(init_frame)+' '+str(last_frame)
+            system(command)
 
+            self.file_hbonds='aux_hbs.bin'
+            self.file_mss='aux_mss.bin'
+            self.file_shell='aux_shell.bin'
+            self.file_net='aux_net.oup'
+            self.file_key_mss='aux_key_mss.oup'
 
-        self.file_hbonds='aux_hbs.bin'
-        self.file_mss='aux_mss.bin'
-        self.file_shell='aux_shell.bin'
-        self.file_net='aux_net.oup'
-        self.file_key_mss='aux_key_mss.oup'
+        else:
+
+            command=self.path+'./pyn_anw_long '+traj_name+' '+write_out+' '+self.water_model+' '+str(self.num_residues)+' '+str(init_frame)+' '+str(last_frame)
+            system(command)
+            system('rm trj_mss.bin')
+            self.file_net='aux_net.oup'
+            self.file_key_mss='aux_key_mss.oup'
+         
+
 
     def get_hbonds(self,frame=None,molecule=None):
 
@@ -542,7 +556,7 @@ class cl_set:
     def get_network(self):
 
         return cl_net(self.file_net,self.file_key_mss)
-
+        
 
 
 
@@ -648,7 +662,7 @@ def prolong_string(condition):
 def make_selection(system,condition):
 
     if type(condition)==str:
-
+	
         condition=prolong_string(condition)
         if 'and' in condition:
                 st=condition.split()  
@@ -805,9 +819,9 @@ def good_select(system,condition):
 
 def g_atom_name(system,possib,list_of_ind):    
         for ii in range(system.num_atoms):
-           
+            
             if system.atom[ii].name==possib:
-               
+                
                 list_of_ind.append(ii)
                 
         return list_of_ind
@@ -1161,7 +1175,99 @@ class cl_residue(cl_set):
 
 
 """ Roman's way to implement residues """
+#NEW
+
+def make_selection2(system,condition):
+
+    if type(condition)==str:
+
+        condition=prolong_string(condition)
+
+    AA=condition.split(' and ')
+    
+    aux_lists={}
+    Num_con=len(AA)
+    for jj in range(Num_con):
+	aux_lists[jj]=good_select2(system,AA[jj])
+
+    last_list=[]
+    ll2=[]
+    for jj in range(Num_con):
+	if jj==Num_con-1:
+		 for ii in range(len(aux_lists[jj])):
+			last_list.append(aux_lists[jj][ii])
+			
+			if last_list.count(aux_lists[jj][ii])==Num_con:
+    					ll2.append(ii)
+
+	else:
+		 for ii in range(len(aux_lists[jj])):
+			last_list.append(aux_lists[jj][ii])
+
+    sux=appending_sel(system,ll2)
+
+
+    return sux
+
+
+def good_select2(system,condition):
+    list_of_ind=[]
+
+    AA=condition.split('(')[1][:-2]
+    param=condition.split('(')[0].replace(' ','')
+    possib=AA.split(' or ')
+    
+    for jj in range(len(possib)):
+	    if param=='atom_name':  
+		
+                list_of_ind=g_atom_name(system,possib[jj].replace(' ',''),list_of_ind) 
+              
+            elif param=='resid_name':
+                list_of_ind=g_resid_name(system,possib[jj].replace(' ',''),list_of_ind)
+            elif param=='donors':
+                possib='donor'
+                list_of_ind=g_donors(system,possib[jj].replace(' ',''),list_of_ind)
+            elif param=='acceptors':
+                possib='acceptor'
+                list_of_ind=g_acceptors(system,possib[jj].replace(' ',''),list_of_ind)
+            elif param=='atom_index':
+                list_of_ind=g_atom_index(system,possib[jj].replace(' ',''),list_of_ind)
+            else:
+                print 'ERROR sel02: unknown parameter ',param
+
+
+   
+    #######after all -  output is  list of index ##############
+    return(list_of_ind)
+
+
+
+
+
+
+
+
+
+
 """
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 if self.file:
             self.residues=res_sel(self)
 
