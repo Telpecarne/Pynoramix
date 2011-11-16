@@ -1176,48 +1176,58 @@ class cl_residue(cl_set):
 
 """ Roman's way to implement residues """
 #NEW
-
-def make_selection2(system,condition):
-
-    if type(condition)==str:
+##############################
+############New functions to make the selections. More compact and cleaner but little bit slower
+#############################
+def make_selection2(system,condition):                 #####system - your system
+						       #####condition - keywords to select,as example: 	OO=make_selection2(wbox,'atom_name (OW or MW) and resid_name (HO4)')
+    if type(condition)==str:                           #####also can work with list of indexes	
 
         condition=prolong_string(condition)
 
-    AA=condition.split(' and ')
+    	AA=condition.split(' and ')                        #####finding keyword 'and'
     
-    aux_lists={}
-    Num_con=len(AA)
-    for jj in range(Num_con):
-	aux_lists[jj]=good_select2(system,AA[jj])
+    	aux_lists={}
+    	Num_con=len(AA)
+    	for jj in range(Num_con):
+		aux_lists[jj]=good_select2(system,AA[jj])      ######making selection for splitted keywords and putting the indexes in the dictionary aux_lists
 
-    last_list=[]
-    ll2=[]
-    for jj in range(Num_con):
-	if jj==Num_con-1:
-		 for ii in range(len(aux_lists[jj])):
-			last_list.append(aux_lists[jj][ii])
+    	last_list=[]					
+    	ll2=[]
+    	for jj in range(Num_con):			       ###### Comparing lists from different keywords,and creating final list of indexed ll2
+		if jj==Num_con-1:
+		 	for ii in range(len(aux_lists[jj])):
+				last_list.append(aux_lists[jj][ii])
 			
-			if last_list.count(aux_lists[jj][ii])==Num_con:
+				if last_list.count(aux_lists[jj][ii])==Num_con:
     					ll2.append(ii)
 
-	else:
-		 for ii in range(len(aux_lists[jj])):
-			last_list.append(aux_lists[jj][ii])
+		else:
+			 for ii in range(len(aux_lists[jj])):
+				last_list.append(aux_lists[jj][ii])
 
-    sux=appending_sel(system,ll2)
+    	sux=appending_sel(system,ll2)
 
+    elif type(condition) in [list,ndarray,tuple]:      ##########if you want to select from list with indexes of atoms
+        LIST=condition
+        sux=appending_sel(system,LIST)
+    else:
+        print "ERROR sel01"
 
     return sux
 
 
+###New function to make selection from keywords. More compact.
 def good_select2(system,condition):
     list_of_ind=[]
 
-    AA=condition.split('(')[1][:-2]
-    param=condition.split('(')[0].replace(' ','')
-    possib=AA.split(' or ')
+    AA=condition.split('(')[1][:-2]		      ##condition to illustrate "atom_name (C or OW or CA or CB)
+    param=condition.split('(')[0].replace(' ','')     #param - key word like atom_name
+    possib=AA.split(' or ')			      #possib - array of possibilies, like [C,OW,CA,CB] if 
     
-    for jj in range(len(possib)):
+
+				
+    for jj in range(len(possib)):		      #making selection using auxiliary functions g_parameter; if you want to select by new parameter - you need to add your own function
 	    if param=='atom_name':  
 		
                 list_of_ind=g_atom_name(system,possib[jj].replace(' ',''),list_of_ind) 
